@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Geoportal Territorial Pro - Argelia Valle</title>
-  
-  <!-- Leaflet CSS & JS -->
+  <meta name="description" content="Visor geográfico de referencia del Esquema de Ordenamiento Territorial del Municipio de Argelia, Valle del Cauca.">
+
+  <!-- Leaflet CSS & JS (versión fija) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Supabase JS (versión fija: evita que una actualización rompa el visor) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 
   <!-- HTML2PDF para Exportar Reportes y Documentación -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -24,10 +25,10 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #0f172a; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; height: 100dvh; width: 100vw; overflow: hidden; background: #0f172a; }
 
     #sidebar {
-      width: 420px; height: 100%; background: var(--bg-sidebar); border-right: 1px solid #e2e8f0;
+      width: 420px; flex-shrink: 0; height: 100%; background: var(--bg-sidebar); border-right: 1px solid #e2e8f0;
       padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; z-index: 1000;
       box-shadow: 4px 0 10px rgba(0,0,0,0.05);
     }
@@ -43,38 +44,16 @@
       gap: 10px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    .credits-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .credits-header { display: flex; align-items: center; gap: 12px; }
     .credits-img {
-      width: 65px;
-      height: 65px;
-      border-radius: 8px;
-      object-fit: cover;
-      border: 2px solid #3b82f6;
-      background: #334155;
+      width: 65px; height: 65px; border-radius: 8px; object-fit: cover;
+      border: 2px solid #3b82f6; background: #334155;
     }
-    .credits-info h3 {
-      font-size: 14px;
-      color: #f8fafc;
-      margin-bottom: 2px;
-    }
-    .credits-info p {
-      font-size: 11px;
-      color: #94a3b8;
-      line-height: 1.3;
-    }
+    .credits-info h3 { font-size: 14px; color: #f8fafc; margin-bottom: 2px; }
+    .credits-info p { font-size: 11px; color: #94a3b8; line-height: 1.3; }
     .credits-badge {
-      background: rgba(59, 130, 246, 0.2);
-      border: 1px solid #3b82f6;
-      color: #60a5fa;
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      align-self: flex-start;
-      font-weight: 600;
+      background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa;
+      font-size: 10px; padding: 3px 8px; border-radius: 4px; align-self: flex-start; font-weight: 600;
     }
 
     .brand { display: flex; align-items: center; justify-content: space-between; color: var(--primary); font-size: 16px; font-weight: bold; }
@@ -84,14 +63,16 @@
 
     .search-box { display: flex; flex-direction: column; gap: 8px; background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; }
     .search-input-group { display: flex; gap: 6px; }
-    .search-input-group input { flex: 1; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
+    .search-input-group input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; }
     .search-input-group input:focus { border-color: var(--accent); }
-    
+    .search-hint { font-size: 11px; color: #64748b; }
+
     button {
       padding: 9px 14px; cursor: pointer; border: none; background: var(--accent);
       color: white; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;
     }
     button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: wait; transform: none; }
 
     .btn-reset {
       background: #dc2626; padding: 6px 10px; font-size: 12px; border-radius: 6px; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 600;
@@ -104,18 +85,23 @@
     .btn-download-layer:hover { background: #0369a1; }
 
     #searchResults { list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+    #searchResults:empty { display: none; }
     .search-item {
       background: white; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;
       font-size: 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: background 0.2s;
     }
     .search-item:hover { background: #f1f5f9; border-color: var(--accent); }
+    .search-item.info { cursor: default; color: #475569; }
+    .search-item.info:hover { background: white; border-color: #e2e8f0; }
     .search-item-header { display: flex; justify-content: space-between; font-weight: bold; color: var(--primary); }
 
     #aiAssistant { display: flex; flex-direction: column; gap: 10px; }
+    #aiAssistant:empty { display: none; }
     .ai-card {
       background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: 8px;
-      font-size: 13px; color: #166534; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      font-size: 13px; color: #166534; box-shadow: 0 2px 4px rgba(0,0,0,0.02); word-break: break-word;
     }
+    .ai-card.error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
     .ai-card h4 { display: flex; align-items: center; justify-content: space-between; color: #15803d; margin-bottom: 8px; }
     .ai-progress-bar { background: #e2e8f0; height: 8px; border-radius: 4px; overflow: hidden; margin: 4px 0 8px 0; }
     .ai-progress-fill { background: #22c55e; height: 100%; transition: width 0.5s ease; }
@@ -127,134 +113,76 @@
       background: white; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;
       display: flex; flex-direction: column; gap: 6px;
     }
-    .layer-header { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+    .layer-item.loading { opacity: 0.7; }
+    .layer-header { display: flex; align-items: center; justify-content: space-between; font-size: 13px; gap: 6px; }
     .layer-controls { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #64748b; }
     .layer-controls input[type="range"] { flex: 1; accent-color: var(--accent); }
+    .layer-header input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
 
-    .corine-badge { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid #475569; }
-    #status { font-size: 12px; color: #334155; background: #e2e8f0; padding: 8px; border-radius: 6px; }
+    .corine-badge { width: 14px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid #475569; flex-shrink: 0; }
+    #status { font-size: 12px; color: #334155; background: #e2e8f0; padding: 8px; border-radius: 6px; line-height: 1.4; word-break: break-word; }
+    #status.error { background: #fee2e2; color: #991b1b; }
 
     /* Alerta Legal de Responsabilidad */
     .disclaimer-box {
-      background: #fffbebf8;
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 11px;
-      color: #92400e;
-      line-height: 1.4;
+      background: #fffbebf8; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: #92400e; line-height: 1.4;
     }
-    .disclaimer-box b {
-      color: #b45309;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 3px;
-    }
+    .disclaimer-box b { color: #b45309; }
+    .disclaimer-box > b:first-child { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; }
 
     /* Guía Desplegable Inferior Izquierda */
     .user-guide-box {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px 14px;
-      max-width: 320px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      font-size: 12px;
-      color: #334155;
-      backdrop-filter: blur(4px);
+      position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+      background: rgba(255, 255, 255, 0.95); border: 1px solid #cbd5e1; border-radius: 8px;
+      padding: 10px 14px; max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-size: 12px; color: #334155; backdrop-filter: blur(4px);
     }
-    .user-guide-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      font-weight: bold;
-      color: #1e293b;
-    }
-    .user-guide-content {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .user-guide-content ul {
-      padding-left: 18px;
-    }
+    .user-guide-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; color: #1e293b; gap: 10px; }
+    .user-guide-content { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .user-guide-content ul { padding-left: 18px; }
 
     .doc-section {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 12px;
-      color: #1e40af;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: auto;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px;
+      font-size: 12px; color: #1e40af; display: flex; flex-direction: column; gap: 8px; margin-top: auto;
     }
     .btn-doc-pdf {
-      background: #1d4ed8;
-      color: white;
-      border: none;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
+      background: #1d4ed8; color: white; border: none; padding: 8px 10px; border-radius: 6px;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .btn-doc-pdf:hover { background: #1e40af; }
 
+    /* Indicador de carga sobre el mapa */
+    .map-loader {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1001;
+      background: rgba(15, 23, 42, 0.88); color: white; font-size: 12px; padding: 7px 14px;
+      border-radius: 20px; display: none; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .map-loader.visible { display: flex; }
+    .spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.35); border-top-color: white; border-radius: 50%; animation: girar 0.8s linear infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+
+    /* Popup del predio */
+    .popup-predio { font-size: 12px; min-width: 210px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .popup-predio .popup-titulo { background: #2563eb; color: white; padding: 6px 8px; border-radius: 4px; font-weight: bold; margin-bottom: 8px; }
+    .popup-tabla { font-size: 12px; max-height: 220px; overflow-y: auto; }
+
     /* Menú Hamburguesa (solo visible en pantallas pequeñas) */
     .sidebar-toggle-btn {
-      display: none;
-      position: fixed;
-      top: max(12px, env(safe-area-inset-top));
-      left: 12px;
-      z-index: 2100;
-      width: 44px;
-      height: 44px;
-      border-radius: 8px;
-      background: var(--primary);
-      color: white;
-      font-size: 20px;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.35);
-      border: none;
-      cursor: pointer;
+      display: none; position: fixed; top: max(12px, env(safe-area-inset-top)); left: 12px; z-index: 2100;
+      width: 44px; height: 44px; border-radius: 8px; background: var(--primary); color: white; font-size: 20px;
+      align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.35); border: none; cursor: pointer;
     }
 
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      z-index: 1500;
-    }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 1500; }
 
     /* Tablets y móviles en horizontal */
     @media (max-width: 900px) {
       body { flex-direction: column; }
 
       #sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 85%;
-        max-width: 360px;
-        height: 100%;
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-        z-index: 2000;
+        position: fixed; top: 0; left: 0; width: 85%; max-width: 360px; height: 100%;
+        transform: translateX(-100%); transition: transform 0.25s ease; z-index: 2000;
         padding-top: max(18px, env(safe-area-inset-top));
       }
       #sidebar.open { transform: translateX(0); }
@@ -264,7 +192,7 @@
       .sidebar-toggle-btn { display: flex; }
       .sidebar-overlay.open { display: block; }
 
-      .user-guide-box { max-width: calc(100% - 32px); left: 12px; bottom: 12px; }
+      .user-guide-box { max-width: calc(100% - 80px); left: 12px; bottom: 12px; }
     }
 
     /* Móviles en vertical / pantallas muy angostas */
@@ -274,7 +202,7 @@
       .credits-info h3 { font-size: 13px; }
       .credits-info p { font-size: 10px; }
       .brand { font-size: 14px; }
-      .search-input-group input { font-size: 12px; padding: 8px 10px; }
+      .search-input-group input { font-size: 16px; padding: 8px 10px; } /* 16px evita el zoom automático en iOS */
       .user-guide-box { font-size: 11px; padding: 8px 10px; }
       #status { font-size: 11px; }
     }
@@ -282,7 +210,7 @@
 </head>
 <body>
 
-  <button id="sidebarToggle" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú">☰</button>
+  <button id="sidebarToggle" class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Menú" aria-label="Abrir menú">☰</button>
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
   <div id="sidebar">
@@ -310,13 +238,14 @@
       <b>⚠️ AVISO IMPORTANTE Y EXENCIÓN DE RESPONSABILIDAD:</b>
       La información presentada en este visor es puramente de <b>carácter referencial e informativo</b> y <b>NO ES VINCULANTE</b> para ningún trámite legal o certificado de uso del suelo. Debido al desfase histórico y desactualización del Esquema de Ordenamiento Territorial (EOT) del Municipio de Argelia, los datos pueden presentar imprecisiones cartográficas o de lindero.
     </div>
-    
+
     <div class="search-box">
       <span style="font-size:12px; font-weight:bold; color:#475569;">🔍 Buscador Catastral Multifiltro</span>
       <div class="search-input-group">
-        <input id="searchInput" placeholder="Escribe NPN o Nombre de Finca (Ej: La Esperanza)..." onkeypress="if(event.key==='Enter') buscarPredios()" />
-        <button onclick="buscarPredios()">Buscar</button>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="NPN o nombre de finca (Ej: La Esperanza)" onkeydown="if(event.key==='Enter') buscarPredios()" />
+        <button id="btnBuscar" onclick="buscarPredios()">Buscar</button>
       </div>
+      <span class="search-hint">Mínimo 3 caracteres. El NPN puede escribirse con o sin guiones.</span>
     </div>
     <ul id="searchResults"></ul>
 
@@ -342,8 +271,10 @@
   </div>
 
   <div id="map">
+    <div id="mapLoader" class="map-loader"><span class="spinner"></span><span id="mapLoaderText">Cargando...</span></div>
+
     <!-- Guía Informativa Desplegable (Inferior Izquierda) -->
-    <div class="user-guide-box">
+    <div class="user-guide-box" id="userGuide">
       <div class="user-guide-header" onclick="toggleGuiaUso()">
         <span>💡 ¿Cómo usar el Geoportal?</span>
         <span id="guideToggleIcon">[−]</span>
@@ -351,59 +282,186 @@
       <div class="user-guide-content" id="guideContent">
         <ul>
           <li><b>Búsqueda:</b> Ingresa el <b>NPN (Cédula Catastral)</b> o <b>Nombre de Finca/Dirección</b> en el buscador.</li>
-          <li><b>Selección directa:</b> Haz clic en cualquier predio dentro del mapa para ver su delimitación.</li>
+          <li><b>Selección directa:</b> Activa la capa de Catastro y haz clic en cualquier predio del mapa.</li>
           <li><b>Diagnóstico:</b> Consulta automáticamente los % de cruce con zonas de Cultivos, Conservación y Protección.</li>
-          <li><b>Descarga Catastral:</b> Exporta la capa de Catastro con metadatos en formato GeoJSON.</li>
+          <li><b>Descarga Catastral:</b> Exporta la capa de Catastro en formato GeoJSON.</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <!-- Contenedor Oculto para Generación de PDF Metodológico -->
-  <div id="metodologiaPDF" style="display:none; padding:30px; font-family:'Segoe UI', Arial, sans-serif; color:#1e293b; background:white; line-height:1.5;">
-    <h1 style="color:#2563eb; font-size:22px; border-bottom:2px solid #2563eb; padding-bottom:8px; margin-bottom:15px;">
-      DOCUMENTACIÓN TÉCNICA Y METODOLÓGICA - GEOPORTAL ARGELIA VALLE
-    </h1>
-    <p><b>Creadores:</b> Juan Pablo Hoyos Aponte & Inteligencia Artificial (IA)</p>
-    <p><b>Municipio:</b> Argelia, Valle del Cauca | <b>Sistema de Referencia:</b> WGS84 (EPSG:4326)</p>
-    <hr style="margin:15px 0; border:0; border-top:1px solid #e2e8f0;">
+  <!-- Plantilla para Generación de PDF Metodológico (se clona al exportar) -->
+  <template id="metodologiaPDF">
+    <div style="padding:30px; font-family:'Segoe UI', Arial, sans-serif; color:#1e293b; background:white; line-height:1.5; font-size:13px;">
+      <h1 style="color:#2563eb; font-size:22px; border-bottom:2px solid #2563eb; padding-bottom:8px; margin-bottom:15px;">
+        DOCUMENTACIÓN TÉCNICA Y METODOLÓGICA - GEOPORTAL ARGELIA VALLE
+      </h1>
+      <p><b>Creadores:</b> Juan Pablo Hoyos Aponte & Inteligencia Artificial (IA)</p>
+      <p><b>Municipio:</b> Argelia, Valle del Cauca | <b>Sistema de Referencia:</b> WGS84 (EPSG:4326)</p>
+      <hr style="margin:15px 0; border:0; border-top:1px solid #e2e8f0;">
 
-    <h3 style="color:#0f172a; margin-top:15px;">1. Arquitectura del Sistema</h3>
-    <p>El Geoportal Territorial utiliza un motor de base de datos relacional <b>PostgreSQL + PostGIS</b> en la nube gestionado a través de <b>Supabase</b>. La capa de cliente se ejecuta mediante un visor web geográfico basado en la librería <b>Leaflet JS</b>.</p>
+      <h3 style="color:#0f172a; margin-top:15px;">1. Arquitectura del Sistema</h3>
+      <p>El Geoportal Territorial utiliza un motor de base de datos relacional <b>PostgreSQL + PostGIS</b> en la nube gestionado a través de <b>Supabase</b>. La capa de cliente se ejecuta mediante un visor web geográfico basado en la librería <b>Leaflet JS</b>.</p>
 
-    <h3 style="color:#0f172a; margin-top:15px;">2. Procesamiento y Análisis Espacial</h3>
-    <p>El cálculo de intersecciones y diagnósticos territoriales se realiza directamente en la base de datos mediante la función plpgsql <code>analizar_predio_completo()</code>:</p>
-    <ul>
-      <li><b>Geometría de Entrada:</b> Validación dinámica del polígono catastral de la capa <code>catarg_va2025wgs84</code> empleando <code>ST_MakeValid</code>.</li>
-      <li><b>Reproyección Automática:</b> Detección y transformación de coordenadas a EPSG:4326 mediante <code>ST_Transform</code>.</li>
-      <li><b>Cálculo de Áreas:</b> Evaluación de superficies esferoidales sobre el elipsoide utilizando el tipo de dato <code>GEOGRAPHY</code> de PostGIS y el operador <code>ST_Area</code>.</li>
-      <li><b>Tolerancia Espacial:</b> Aplicación de búfer métrico de ajuste (<code>ST_Buffer(..., 0.000001)</code>) para evitar inconsistencias por micro-fisuras topológicas en los bordes de polígonos.</li>
-    </ul>
+      <h3 style="color:#0f172a; margin-top:15px;">2. Procesamiento y Análisis Espacial</h3>
+      <p>El cálculo de intersecciones y diagnósticos territoriales se realiza directamente en la base de datos mediante la función PL/pgSQL <code>analizar_predio_completo()</code>:</p>
+      <ul style="padding-left:20px;">
+        <li><b>Geometría de Entrada:</b> Validación del polígono catastral de la capa <code>catarg_va2025wgs84</code> empleando <code>ST_MakeValid</code> y <code>ST_CollectionExtract</code>.</li>
+        <li><b>Reproyección Automática:</b> Detección del sistema de referencia de cada capa y transformación a EPSG:4326 mediante <code>ST_Transform</code>.</li>
+        <li><b>Cálculo de Áreas:</b> Evaluación de superficies sobre el elipsoide WGS84 utilizando el tipo de dato <code>GEOGRAPHY</code> de PostGIS y el operador <code>ST_Area</code>.</li>
+        <li><b>Control de Superposiciones:</b> Disolución (<code>ST_Union</code>) de los polígonos de cada zona antes de la intersección, para no contabilizar dos veces áreas superpuestas.</li>
+      </ul>
 
-    <h3 style="color:#0f172a; margin-top:15px;">3. Estructura de Capas e Intersección</h3>
-    <p>El motor contrasta dinámicamente cada predio consultado contra las capas temáticas cargadas (Conservación Estricta, Cultivos, Pastoreo, Protección-Producción, Protección-Rehabilitación, Perímetro Urbano CVC y Límite Municipal), obteniendo el área exacta de solapamiento en metros cuadrados ($m^2$), hectáreas ($Ha$) y el porcentaje de ocupación territorial.</p>
+      <h3 style="color:#0f172a; margin-top:15px;">3. Estructura de Capas e Intersección</h3>
+      <p>El motor contrasta dinámicamente cada predio consultado contra las capas temáticas poligonales cargadas (Conservación Estricta, Cultivos, Pastoreo, Protección-Producción, Protección-Rehabilitación, Perímetro Urbano CVC y Límite Municipal), obteniendo el área de solapamiento en metros cuadrados (m²), hectáreas (ha) y el porcentaje de ocupación sobre el área del predio. Se descartan cruces inferiores a 1 m².</p>
 
-    <div style="margin-top:25px; padding:12px; background:#fffbebf8; border:1px solid #fde68a; border-radius:6px; font-size:11px; color:#92400e;">
-      <b>⚠️ AVISO LEGAL Y NOTA DE RESPONSABILIDAD:</b><br>
-      La información contenida en este reporte y en el geoportal es estrictamente informativa y de referencia técnica. NO ES VINCULANTE para ningún trámite legal o de expedición de licencias. Dada la desactualización histórica del Esquema de Ordenamiento Territorial (EOT) del Municipio de Argelia, Valle del Cauca, la información puede presentar errores o desajustes topográficos.
+      <h3 style="color:#0f172a; margin-top:15px;">4. Protección de Datos Personales</h3>
+      <p>En cumplimiento de la Ley 1581 de 2012, el visor no publica ni permite buscar por campos con datos personales (propietario, documento de identidad, teléfono o correo).</p>
+
+      <div style="margin-top:25px; padding:12px; background:#fffbebf8; border:1px solid #fde68a; border-radius:6px; font-size:11px; color:#92400e;">
+        <b>⚠️ AVISO LEGAL Y NOTA DE RESPONSABILIDAD:</b><br>
+        La información contenida en este reporte y en el geoportal es estrictamente informativa y de referencia técnica. NO ES VINCULANTE para ningún trámite legal o de expedición de licencias. Dada la desactualización histórica del Esquema de Ordenamiento Territorial (EOT) del Municipio de Argelia, Valle del Cauca, la información puede presentar errores o desajustes topográficos.
+      </div>
     </div>
-  </div>
+  </template>
 
   <script>
+    // =====================================================================
+    // CONFIGURACIÓN
+    // La llave "anon" de Supabase es pública por diseño: la seguridad la
+    // dan las funciones SECURITY DEFINER y los permisos del rol anon.
+    // =====================================================================
     const SUPABASE_URL = "https://ddrhsncteyzcunmovxix.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhzbmN0ZXl6Y3VubW92eGl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTYyMTgsImV4cCI6MjEwMDYzMjIxOH0.XXaMJw3gDX-EJT6cCDzosF3n4E4R0dGc_z5WJ45p5do";
 
+    const TABLA_CATASTRO = 'catarg_va2025wgs84';
     const CENTER_COORDS = [4.728, -76.125];
     const CENTER_ZOOM = 13;
+    const OPACIDAD_INICIAL = 0.6;
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const map = L.map('map', { zoomControl: false }).setView(CENTER_COORDS, CENTER_ZOOM);
+    // Campos candidatos (se comparan sin distinguir mayúsculas)
+    const CAMPOS_ID = ['gid', 'id', 'objectid', 'fid', 'ogc_fid', 'id_predio'];
+    const CAMPOS_NPN = ['npn', 'numero_predial', 'codigo_predial', 'cod_predial', 'numero_pre', 'codigo_pre', 'cod_catast', 'codigo_catastral', 'codigo', 'predial'];
+    const CAMPOS_DIR = ['direccion', 'dir_predio', 'nombre_predio', 'nom_predio', 'nombre', 'predio', 'vereda'];
+
+    // =====================================================================
+    // UTILIDADES
+    // =====================================================================
+    function esc(valor) {
+      return String(valor ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function aJSON(valor) {
+      if (typeof valor === 'string') {
+        try { return JSON.parse(valor); } catch (e) { return null; }
+      }
+      return valor;
+    }
+
+    function campo(props, candidatos) {
+      if (!props) return null;
+      const mapa = {};
+      Object.keys(props).forEach(k => { mapa[k.toLowerCase()] = props[k]; });
+      for (const c of candidatos) {
+        const v = mapa[c.toLowerCase()];
+        if (v !== null && v !== undefined && String(v).trim() !== '') return String(v).trim();
+      }
+      return null;
+    }
+
+    function numero(valor) {
+      const n = Number(valor);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function formatoNumero(valor, decimales) {
+      return numero(valor).toLocaleString('es-CO', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+    }
+
+    // Traduce errores técnicos a mensajes accionables
+    function describirError(err) {
+      if (!err) return 'Error desconocido.';
+      const msg = String(err.message || err.details || err);
+      const code = err.code || '';
+      if (/Failed to fetch|NetworkError|Load failed|ERR_/i.test(msg)) {
+        return 'No hay conexión con la base de datos (Supabase). Verifique su conexión a internet o si el proyecto de Supabase está pausado por inactividad.';
+      }
+      if (code === 'PGRST202' || /Could not find the function/i.test(msg)) {
+        return 'La función requerida no existe en la base de datos. Ejecute el script sql/02_funciones_geoportal.sql en Supabase.';
+      }
+      if (code === '57014' || /statement timeout/i.test(msg)) {
+        return 'La consulta superó el tiempo máximo del servidor. Ejecute el script sql/02_funciones_geoportal.sql (amplía el límite a 30 s).';
+      }
+      if (code === '42501' || /permission denied/i.test(msg)) {
+        return 'Permiso denegado para el usuario público (anon). Ejecute el script sql/02_funciones_geoportal.sql para otorgar permisos.';
+      }
+      if (/Invalid API key|JWT/i.test(msg)) {
+        return 'La llave de acceso (anon key) de Supabase no es válida o fue regenerada. Actualice SUPABASE_KEY en index.html.';
+      }
+      return msg;
+    }
+
+    function setStatus(texto, esError = false) {
+      const status = document.getElementById('status');
+      status.textContent = texto;
+      status.classList.toggle('error', esError);
+    }
+
+    let cargasActivas = 0;
+    function mostrarCarga(texto) {
+      cargasActivas++;
+      document.getElementById('mapLoaderText').textContent = texto;
+      document.getElementById('mapLoader').classList.add('visible');
+    }
+    function ocultarCarga() {
+      cargasActivas = Math.max(0, cargasActivas - 1);
+      if (cargasActivas === 0) document.getElementById('mapLoader').classList.remove('visible');
+    }
+
+    // =====================================================================
+    // VERIFICACIÓN DE LIBRERÍAS (si un CDN falla, se informa en pantalla)
+    // =====================================================================
+    if (!window.L || !window.supabase) {
+      document.addEventListener('DOMContentLoaded', () => {
+        setStatus('❌ No se pudieron cargar las librerías del visor (' + (!window.L ? 'Leaflet ' : '') + (!window.supabase ? 'Supabase' : '') + '). Revise su conexión o si un bloqueador de contenido está activo.', true);
+      });
+      throw new Error('Librerías no disponibles');
+    }
+
+    // =====================================================================
+    // MAPA
+    // =====================================================================
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+
+    // preferCanvas: dibuja miles de predios sin bloquear el navegador
+    const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView(CENTER_COORDS, CENTER_ZOOM);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+    // Panel superior para el predio resaltado (siempre por encima de las capas)
+    // Se usa SVG (no canvas) para que este panel no intercepte los clics
+    // dirigidos a los predios que están debajo.
+    map.createPane('resaltado');
+    map.getPane('resaltado').style.zIndex = 450;
+    const rendererResaltado = L.svg({ pane: 'resaltado' });
+
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: '© Esri'
+    });
 
     L.control.layers({ "Mapa Base (OSM)": osm, "Vista Satelital": esriSat }, null, { position: 'topright' }).addTo(map);
+
+    // Evita que los clics y el scroll sobre la guía muevan el mapa
+    const guia = document.getElementById('userGuide');
+    L.DomEvent.disableClickPropagation(guia);
+    L.DomEvent.disableScrollPropagation(guia);
+    // En celulares la guía inicia plegada para no tapar el mapa
+    if (window.innerWidth <= 900) toggleGuiaUso();
 
     function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('open');
@@ -417,32 +475,34 @@
       }
     }
 
-    const loadedLayers = {};
-    const layerOpacities = {};
-    let searchLayerGroup = L.layerGroup().addTo(map);
+    // Estado de capas, indexado por nombre real de la tabla
+    const capas = {};          // tabla -> { layer, opacidad, cargando, checkbox, slider, item }
+    const capasOrden = [];     // nombres de tabla en el orden mostrado
+    const searchLayerGroup = L.layerGroup().addTo(map);
 
     function obtenerNombreAmigable(nombreTabla) {
-      if (nombreTabla === 'catarg_va2025wgs84') return 'Catastro Argelia 2025';
-      if (nombreTabla === 'limitmun_argeliacvc' || nombreTabla === 'limitearg_va2025' || nombreTabla === 'Arlia_Perim') return 'Límite Argelia';
-      if (nombreTabla === 'perurb_geocvc') return 'Perímetro Urbano CVC';
-      if (nombreTabla === 'Conservacion Estricta' || nombreTabla === 'conservacion_estricta') return 'Conservación Estricta';
-      if (nombreTabla === 'Proteccion-Produccion') return 'Protección-Producción';
-      if (nombreTabla === 'proteccion_rehabilitacion') return 'Protección-Rehabilitación';
-      if (nombreTabla === 'cultivos') return 'Cultivos';
-      if (nombreTabla === 'pastoreo') return 'Pastoreo';
-      return nombreTabla;
+      const n = String(nombreTabla);
+      if (n === TABLA_CATASTRO) return 'Catastro Argelia 2025';
+      if (n === 'limitmun_argeliacvc' || n === 'limitearg_va2025' || n === 'Arlia_Perim') return 'Límite Argelia';
+      if (n === 'perurb_geocvc') return 'Perímetro Urbano CVC';
+      if (n === 'Conservacion Estricta' || n === 'conservacion_estricta') return 'Conservación Estricta';
+      if (n === 'Proteccion-Produccion' || n === 'proteccion_produccion') return 'Protección-Producción';
+      if (n === 'proteccion_rehabilitacion' || n === 'Proteccion-Rehabilitacion') return 'Protección-Rehabilitación';
+      if (n === 'cultivos') return 'Cultivos';
+      if (n === 'pastoreo') return 'Pastoreo';
+      return n;
     }
 
-    function getCorineStyle(nombre, opacity = 0.6) {
-      const n = nombre.toLowerCase();
+    function getCorineStyle(nombre, opacity = OPACIDAD_INICIAL) {
+      const n = String(nombre).toLowerCase();
 
       if (n.includes('limitmun') || n.includes('limitearg') || n.includes('arlia')) {
         return { color: "#dc2626", weight: 2.5, fillOpacity: 0, dashArray: '6, 6' };
       } else if (n.includes('catarg') || n.includes('catastro')) {
-        return { fillColor: "#3182ce", color: "#1a365d", weight: 1.5, fillOpacity: opacity };
+        return { fillColor: "#3182ce", color: "#1a365d", weight: 1, fillOpacity: opacity * 0.5, opacity: Math.min(1, opacity + 0.3) };
       } else if (n.includes('perurb') || n.includes('perimetro')) {
         return { fillColor: "#805ad5", color: "#553c9a", weight: 1.5, fillOpacity: opacity };
-      } else if (n.includes('proteccion-produccion') || n.includes('protección-producción')) {
+      } else if (n.includes('proteccion-produccion') || n.includes('proteccion_produccion') || n.includes('protección-producción')) {
         return { fillColor: "#DD6B20", color: "#C05621", weight: 1.5, fillOpacity: opacity, dashArray: '5, 5' };
       } else if (n.includes('rehabilitacion') || n.includes('rehabilitación')) {
         return { fillColor: "#38A169", color: "#22543D", weight: 1.5, fillOpacity: opacity, dashArray: '2, 4' };
@@ -459,282 +519,433 @@
       return { fillColor: "#A0AEC0", color: "#4A5568", weight: 1.5, fillOpacity: opacity };
     }
 
+    // =====================================================================
+    // INICIALIZACIÓN: lista de capas
+    // =====================================================================
     async function inicializar() {
-      const status = document.getElementById("status");
+      setStatus('Conectando a base de datos PostGIS...');
       try {
         const { data, error } = await supabaseClient.rpc("list_tables");
         if (error) throw error;
+        if (!Array.isArray(data) || data.length === 0) {
+          setStatus('⚠️ La base de datos no reporta capas espaciales publicadas.', true);
+          return;
+        }
 
-        status.textContent = `✅ ${data.length} capas espaciales sincronizadas.`;
-        const listContainer = document.getElementById("layerList");
-        listContainer.innerHTML = "";
+        const nombres = data
+          .map(item => typeof item === 'string' ? item : (item.tabla || item.table_name || item.f_table_name))
+          .filter(Boolean);
 
-        const dataOrdenada = data.sort((a, b) => {
-          const tA = a.tabla || a.table_name;
-          const tB = b.tabla || b.table_name;
-          if (tA === 'catarg_va2025wgs84') return 1;
-          if (tB === 'catarg_va2025wgs84') return -1;
-          return tA.localeCompare(tB);
+        // Catastro al final (se dibuja encima y es la capa de consulta)
+        nombres.sort((a, b) => {
+          if (a === TABLA_CATASTRO) return 1;
+          if (b === TABLA_CATASTRO) return -1;
+          return obtenerNombreAmigable(a).localeCompare(obtenerNombreAmigable(b), 'es');
         });
 
-        dataOrdenada.forEach(item => {
-          const tableName = item.tabla || item.table_name;
-          const nombreVisual = obtenerNombreAmigable(tableName);
+        const listContainer = document.getElementById("layerList");
+        listContainer.innerHTML = "";
+        capasOrden.length = 0;
+
+        nombres.forEach((tableName, idx) => {
+          const domId = 'capa-' + idx;
           const style = getCorineStyle(tableName);
-          layerOpacities[tableName] = 0.6;
-
           const colorBadge = style.fillOpacity === 0 ? style.color : style.fillColor;
-
-          const botonDescarga = tableName === 'catarg_va2025wgs84' 
-            ? `<button class="btn-download-layer" onclick="descargarCapaGeoJSON('${tableName}')" title="Descargar GeoJSON con Metadatos">⬇️ GeoJSON</button>` 
-            : '';
 
           const li = document.createElement("li");
           li.className = "layer-item";
           li.innerHTML = `
             <div class="layer-header">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="corine-badge" style="background:${colorBadge}; border-color:${style.color}"></span>
-                <label for="layer-${tableName}" style="cursor:pointer; font-weight:600;">${nombreVisual}</label>
+              <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                <span class="corine-badge" style="background:${esc(colorBadge)}; border-color:${esc(style.color)}"></span>
+                <label for="${domId}" style="cursor:pointer; font-weight:600;">${esc(obtenerNombreAmigable(tableName))}</label>
               </div>
               <div style="display:flex; align-items:center; gap:6px;">
-                ${botonDescarga}
-                <input type="checkbox" id="layer-${tableName}" onchange="toggleCapa('${tableName}', this.checked)">
+                ${tableName === TABLA_CATASTRO ? `<button class="btn-download-layer" title="Descargar capa en GeoJSON">⬇️ GeoJSON</button>` : ''}
+                <input type="checkbox" id="${domId}">
               </div>
             </div>
             <div class="layer-controls">
               <span>Opacidad:</span>
-              <input type="range" id="opacity-${tableName}" min="0.1" max="1" step="0.1" value="0.6" oninput="cambiarOpacidad('${tableName}', this.value)">
-            </div>
-          `;
+              <input type="range" min="0.1" max="1" step="0.1" value="${OPACIDAD_INICIAL}">
+            </div>`;
+
+          const checkbox = li.querySelector('input[type="checkbox"]');
+          const slider = li.querySelector('input[type="range"]');
+          const btnDescarga = li.querySelector('.btn-download-layer');
+
+          checkbox.addEventListener('change', () => toggleCapa(tableName, checkbox.checked));
+          slider.addEventListener('input', () => cambiarOpacidad(tableName, slider.value));
+          if (btnDescarga) btnDescarga.addEventListener('click', () => descargarCapaGeoJSON(tableName, btnDescarga));
+
+          capas[tableName] = { layer: null, opacidad: OPACIDAD_INICIAL, cargando: null, checkbox, slider, item: li };
+          capasOrden.push(tableName);
           listContainer.appendChild(li);
         });
+
+        setStatus(`✅ ${nombres.length} capas espaciales sincronizadas.`);
       } catch (err) {
-        status.textContent = "❌ Error de conexión: " + err.message;
+        console.error('list_tables:', err);
+        setStatus('❌ Error de conexión: ' + describirError(err), true);
       }
     }
 
-    async function toggleCapa(tableName, visible) {
-      const status = document.getElementById("status");
-      if (visible) {
-        if (!loadedLayers[tableName]) {
-          status.textContent = `⏳ Cargando vectores de "${obtenerNombreAmigable(tableName)}"...`;
-          const { data, error } = await supabaseClient.rpc("get_geojson", { table_name: tableName });
+    // Descarga (una sola vez) el GeoJSON de una capa; reutiliza la promesa si ya está en curso
+    async function obtenerGeoJSON(tableName) {
+      const { data, error } = await supabaseClient.rpc("get_geojson", { table_name: tableName });
+      if (error) throw error;
+      const geojson = aJSON(data);
+      if (!geojson || !Array.isArray(geojson.features)) throw new Error('Respuesta sin formato GeoJSON válido.');
+      return geojson;
+    }
 
-          if (error || !data || !data.features || data.features.length === 0) {
-            status.textContent = `⚠️ Capa "${obtenerNombreAmigable(tableName)}" sin datos.`;
-            document.getElementById(`layer-${tableName}`).checked = false;
-            return;
-          }
+    function popupAtributos(tableName, props) {
+      let filas = '';
+      for (const k in props) {
+        if (k.startsWith('_')) continue;
+        filas += `<b>${esc(k)}:</b> ${esc(props[k])}<br>`;
+      }
+      return `<div class="popup-tabla"><b>Capa: ${esc(obtenerNombreAmigable(tableName))}</b><hr style="margin:4px 0;">${filas || '<i>Sin atributos</i>'}</div>`;
+    }
 
-          loadedLayers[tableName] = L.geoJSON(data, {
-            style: () => getCorineStyle(tableName, layerOpacities[tableName]),
+    function cargarCapa(tableName) {
+      const capa = capas[tableName];
+      if (capa.layer) return Promise.resolve(capa.layer);
+      if (capa.cargando) return capa.cargando;
+
+      const nombre = obtenerNombreAmigable(tableName);
+      setStatus(`⏳ Cargando vectores de "${nombre}"...`);
+      mostrarCarga(`Cargando ${nombre}...`);
+      capa.item.classList.add('loading');
+
+      capa.cargando = obtenerGeoJSON(tableName)
+        .then(geojson => {
+          if (geojson.features.length === 0) throw new Error('La capa no contiene elementos.');
+          capa.layer = L.geoJSON(geojson, {
+            style: () => getCorineStyle(tableName, capa.opacidad),
+            pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 5 }),
             onEachFeature: (f, layer) => {
-              if (tableName === 'catarg_va2025wgs84') {
+              if (tableName === TABLA_CATASTRO) {
                 layer.on('click', () => {
-                  const props = f.properties;
-                  const id = props.id || props.gid || props.objectid || '1';
-                  const npn = props.npn || props.codigo || props.numero_predial || 'Sin NPN';
-                  const dir = props.direccion || props.dir_predio || props.nombre_predio || 'Sin Nombre/Dirección';
-                  
-                  const featureGeoJSON = { type: "FeatureCollection", features: [f] };
-                  ubicarYAnalizar(featureGeoJSON, 'Catastro', id, npn, dir);
+                  const props = f.properties || {};
+                  const id = campo(props, CAMPOS_ID) || 's/i';
+                  const npn = campo(props, CAMPOS_NPN) || 'Sin NPN';
+                  const dir = campo(props, CAMPOS_DIR) || 'Sin nombre / dirección';
+                  ubicarYAnalizar({ type: "FeatureCollection", features: [f] }, 'Catastro', id, npn, dir);
                 });
               } else {
-                let pop = `<div style="font-size:12px;"><b>Capa: ${obtenerNombreAmigable(tableName)}</b><hr style="margin:4px 0;">`;
-                for (let k in f.properties) pop += `<b>${k}:</b> ${f.properties[k]}<br>`;
-                layer.bindPopup(pop + `</div>`);
+                layer.bindPopup(() => popupAtributos(tableName, f.properties || {}));
               }
             }
           });
-        }
-        loadedLayers[tableName].addTo(map);
-        status.textContent = `✅ Capa "${obtenerNombreAmigable(tableName)}" activa.`;
-      } else if (loadedLayers[tableName]) {
-        map.removeLayer(loadedLayers[tableName]);
-      }
+          return capa.layer;
+        })
+        .finally(() => {
+          capa.cargando = null;
+          capa.item.classList.remove('loading');
+          ocultarCarga();
+        });
+
+      return capa.cargando;
     }
 
-    function cambiarOpacidad(tableName, valor) {
-      layerOpacities[tableName] = parseFloat(valor);
-      if (loadedLayers[tableName]) {
-        loadedLayers[tableName].setStyle(f => getCorineStyle(tableName, layerOpacities[tableName]));
-      }
-    }
+    async function toggleCapa(tableName, visible) {
+      const capa = capas[tableName];
+      if (!capa) return;
+      const nombre = obtenerNombreAmigable(tableName);
 
-    async function buscarPredios() {
-      const q = document.getElementById("searchInput").value.trim();
-      const resultsContainer = document.getElementById("searchResults");
-      const status = document.getElementById("status");
-      resultsContainer.innerHTML = "";
-
-      if (!q) return;
-
-      status.textContent = "🔍 Buscando finca o NPN en Catastro...";
-      const { data, error } = await supabaseClient.rpc("buscar_predios_pro", { criterio: q });
-
-      if (error || !data || data.length === 0) {
-        resultsContainer.innerHTML = "<li class='search-item'>Sin coincidencias catastrales. Pruebe con otro nombre o NPN.</li>";
-        status.textContent = "Búsqueda finalizada sin resultados.";
+      if (!visible) {
+        if (capa.layer && map.hasLayer(capa.layer)) map.removeLayer(capa.layer);
         return;
       }
 
-      status.textContent = `✅ ${data.length} predio(s) encontrado(s).`;
-
-      data.forEach(p => {
-        const li = document.createElement("li");
-        li.className = "search-item";
-        li.onclick = () => ubicarYAnalizar(p.geojson, p.origen, p.id_predio, p.npn, p.direccion);
-        li.innerHTML = `
-          <div class="search-item-header">
-            <span>ID Predio: ${p.id_predio}</span>
-            <span style="color:var(--accent);">Ver en Mapa →</span>
-          </div>
-          <div><b>NPN:</b> ${p.npn}</div>
-          <div><b>Finca / Dir:</b> ${p.direccion}</div>
-        `;
-        resultsContainer.appendChild(li);
-      });
-
-      if (data.length === 1) {
-        const p = data[0];
-        ubicarYAnalizar(p.geojson, p.origen, p.id_predio, p.npn, p.direccion);
+      try {
+        const layer = await cargarCapa(tableName);
+        // El usuario pudo desmarcar la capa mientras se descargaba
+        if (!capa.checkbox.checked) return;
+        if (!map.hasLayer(layer)) layer.addTo(map);
+        ordenarCapas();
+        setStatus(`✅ Capa "${nombre}" activa (${layer.getLayers().length} elementos).`);
+      } catch (err) {
+        console.error('get_geojson', tableName, err);
+        capa.checkbox.checked = false;
+        setStatus(`⚠️ Capa "${nombre}": ${describirError(err)}`, true);
       }
     }
 
+    // Mantiene el orden de dibujo: zonas abajo, catastro y límites arriba
+    function ordenarCapas() {
+      capasOrden.forEach(t => {
+        const c = capas[t];
+        if (c.layer && map.hasLayer(c.layer) && c.layer.bringToFront) c.layer.bringToFront();
+      });
+      capasOrden.filter(t => /limit|arlia/i.test(t)).forEach(t => {
+        const c = capas[t];
+        if (c.layer && map.hasLayer(c.layer)) c.layer.bringToFront();
+      });
+    }
+
+    function cambiarOpacidad(tableName, valor) {
+      const capa = capas[tableName];
+      if (!capa) return;
+      capa.opacidad = parseFloat(valor);
+      if (capa.layer) capa.layer.setStyle(getCorineStyle(tableName, capa.opacidad));
+    }
+
+    // =====================================================================
+    // BÚSQUEDA CATASTRAL
+    // =====================================================================
+    async function buscarPredios() {
+      const q = document.getElementById("searchInput").value.trim();
+      const resultsContainer = document.getElementById("searchResults");
+      const btn = document.getElementById('btnBuscar');
+      resultsContainer.innerHTML = "";
+
+      if (!q) return;
+      if (q.length < 3) {
+        resultsContainer.innerHTML = "<li class='search-item info'>Escriba al menos 3 caracteres.</li>";
+        return;
+      }
+
+      setStatus("🔍 Buscando finca o NPN en Catastro...");
+      btn.disabled = true;
+      try {
+        const { data, error } = await supabaseClient.rpc("buscar_predios_pro", { criterio: q });
+        if (error) throw error;
+
+        if (!Array.isArray(data) || data.length === 0) {
+          resultsContainer.innerHTML = "<li class='search-item info'>Sin coincidencias catastrales. Pruebe con otro nombre o NPN.</li>";
+          setStatus("Búsqueda finalizada sin resultados.");
+          return;
+        }
+
+        setStatus(`✅ ${data.length} predio(s) encontrado(s)${data.length >= 25 ? ' (se muestran los primeros 25; refine la búsqueda)' : ''}.`);
+
+        data.forEach(p => {
+          const li = document.createElement("li");
+          li.className = "search-item";
+          li.addEventListener('click', () => ubicarYAnalizar(aJSON(p.geojson), p.origen, p.id_predio, p.npn, p.direccion));
+          li.innerHTML = `
+            <div class="search-item-header">
+              <span>ID Predio: ${esc(p.id_predio)}</span>
+              <span style="color:var(--accent);">Ver en Mapa →</span>
+            </div>
+            <div><b>NPN:</b> ${esc(p.npn)}</div>
+            <div><b>Finca / Dir:</b> ${esc(p.direccion)}</div>`;
+          resultsContainer.appendChild(li);
+        });
+
+        if (data.length === 1) {
+          const p = data[0];
+          ubicarYAnalizar(aJSON(p.geojson), p.origen, p.id_predio, p.npn, p.direccion);
+        }
+      } catch (err) {
+        console.error('buscar_predios_pro:', err);
+        resultsContainer.innerHTML = `<li class='search-item info'>❌ ${esc(describirError(err))}</li>`;
+        setStatus('❌ Error en la búsqueda: ' + describirError(err), true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // UBICACIÓN Y DIAGNÓSTICO DEL PREDIO
+    // =====================================================================
+    let consultaActual = 0;
+
     async function ubicarYAnalizar(geojson, origen, idPredio, npn, direccion) {
-      const cbCatastro = document.getElementById('layer-catarg_va2025wgs84');
-      if (cbCatastro && !cbCatastro.checked) {
-        cbCatastro.checked = true;
-        toggleCapa('catarg_va2025wgs84', true);
+      const consulta = ++consultaActual;
+      const aiContainer = document.getElementById("aiAssistant");
+
+      if (!geojson) {
+        aiContainer.innerHTML = `<div class="ai-card error">❌ El predio no tiene geometría válida para ubicarlo en el mapa.</div>`;
+        return;
+      }
+
+      // Activa catastro como contexto (sin bloquear el análisis)
+      const catastro = capas[TABLA_CATASTRO];
+      if (catastro && !catastro.checkbox.checked) {
+        catastro.checkbox.checked = true;
+        toggleCapa(TABLA_CATASTRO, true);
       }
 
       searchLayerGroup.clearLayers();
       const layer = L.geoJSON(geojson, {
+        pane: 'resaltado',
+        renderer: rendererResaltado,
+        interactive: true,
         style: { color: '#2563eb', weight: 4, fillColor: '#60a5fa', fillOpacity: 0.45 }
       }).addTo(searchLayerGroup);
 
       cerrarSidebarEnMovil();
 
       if (layer.getBounds().isValid()) {
-        setTimeout(() => map.invalidateSize(), 260);
-        map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 18 });
+        setTimeout(() => {
+          map.invalidateSize();
+          map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 18 });
+        }, 260);
       }
 
-      const aiContainer = document.getElementById("aiAssistant");
-      aiContainer.innerHTML = `<div class="ai-card">🤖 <b>Analista Espacial:</b> Consultando cruces territoriales...</div>`;
+      const npnValido = npn && npn !== 'Sin NPN' ? String(npn) : null;
+      const idValido = idPredio && idPredio !== 's/i' ? String(idPredio) : null;
+      const claveBusqueda = npnValido || idValido;
 
-      const { data, error } = await supabaseClient.rpc("analizar_predio_completo", {
-        tabla_predio: 'catarg_va2025wgs84',
-        npn_buscado: String(npn || idPredio)
-      });
+      aiContainer.innerHTML = `<div class="ai-card">📊 <b>Analista Espacial:</b> Consultando cruces territoriales...</div>`;
+      mostrarCarga('Analizando cruces territoriales...');
+
+      let data = null, error = null;
+      try {
+        if (!claveBusqueda) throw new Error('El predio no tiene NPN ni identificador para el análisis.');
+        const r = await supabaseClient.rpc("analizar_predio_completo", {
+          tabla_predio: TABLA_CATASTRO,
+          npn_buscado: claveBusqueda
+        });
+        data = r.data; error = r.error;
+      } catch (e) {
+        error = e;
+      } finally {
+        ocultarCarga();
+      }
+
+      // Si el usuario ya seleccionó otro predio, se descarta esta respuesta
+      if (consulta !== consultaActual) return;
 
       let resumenHTML = "";
       let htmlPanel = `
         <div class="ai-card" id="reporteArea">
-          <h4>🤖 Diagnóstico Territorial IA</h4>
+          <h4>📊 Diagnóstico Territorial</h4>
           <b>Capa:</b> Catastro Argelia 2025<br>
-          <b>NPN:</b> ${npn}<br>
-          <b>Finca / Dirección:</b> ${direccion}<br>
+          <b>NPN:</b> ${esc(npn)}<br>
+          <b>Finca / Dirección:</b> ${esc(direccion)}<br>
+          <b>Fecha de consulta:</b> ${esc(new Date().toLocaleString('es-CO'))}<br>
           <hr style="margin:8px 0; border:0; border-top:1px solid #bbf7d0;">
           <b>Desglose por Zonas de Cobertura y Uso:</b>`;
 
-      if (error || !data || data.length === 0) {
+      if (error) {
+        console.error('analizar_predio_completo:', error);
+        const msgError = `<i style="color:#991b1b;">No fue posible calcular los cruces: ${esc(describirError(error))}</i>`;
+        htmlPanel += `<br>${msgError}`;
+        resumenHTML = msgError;
+      } else if (!Array.isArray(data) || data.length === 0) {
         const sinInterseccion = `<i style="color:#64748b;">El predio no registra cruces directos con capas de zonificación.</i>`;
         htmlPanel += `<br>${sinInterseccion}`;
         resumenHTML = sinInterseccion;
       } else {
-        data.forEach(row => {
-          const pct = Math.min(100, row.porcentaje).toFixed(1);
-          const areaHa = (row.area_cruce_m2 / 10000).toFixed(2);
-          const nombreCapa = obtenerNombreAmigable(row.capa_zona);
+        data
+          .slice()
+          .sort((a, b) => numero(b.porcentaje) - numero(a.porcentaje))
+          .forEach(row => {
+            const pctNum = Math.max(0, Math.min(100, numero(row.porcentaje)));
+            const pct = formatoNumero(pctNum, 1);
+            const areaHa = formatoNumero(numero(row.area_cruce_m2) / 10000, 2);
+            const areaM2 = formatoNumero(row.area_cruce_m2, 0);
+            const nombreCapa = esc(obtenerNombreAmigable(row.capa_zona));
 
-          resumenHTML += `<div style="margin-top:4px;">• <b>${nombreCapa}:</b> ${pct}% (${areaHa} Ha)</div>`;
-
-          htmlPanel += `
-            <div style="margin-top:6px;">
-              <b>• ${nombreCapa}:</b> ${pct}% (${areaHa} Ha / ${row.area_cruce_m2.toFixed(0)} m²)
-              <div class="ai-progress-bar">
-                <div class="ai-progress-fill" style="width: ${pct}%;"></div>
-              </div>
-            </div>`;
-        });
+            resumenHTML += `<div style="margin-top:4px;">• <b>${nombreCapa}:</b> ${pct}% (${areaHa} ha)</div>`;
+            htmlPanel += `
+              <div style="margin-top:6px;">
+                <b>• ${nombreCapa}:</b> ${pct}% (${areaHa} ha / ${areaM2} m²)
+                <div class="ai-progress-bar">
+                  <div class="ai-progress-fill" style="width: ${pctNum}%;"></div>
+                </div>
+              </div>`;
+          });
       }
 
       htmlPanel += `
-        <div style="margin-top:10px; font-size:10px; color:#92400e; background:#fffbebf8; padding:8px; border-radius:6px; border:1px solid #fde68a; line-height:1.3;">
-          <b>⚠️ AVISO LEGAL DE RESPONSABILIDAD:</b><br>
-          Este reporte de Coberturas y Uso es de carácter <b>exclusivamente referencial e informativo</b> y <b>NO ES VINCULANTE</b> para ningún trámite legal o de expedición de certificados. Debido a la desactualización histórica del Esquema de Ordenamiento Territorial (EOT) del Municipio de Argelia, la información puede presentar inconsistencias o imprecisiones cartográficas.
+          <div style="margin-top:10px; font-size:10px; color:#92400e; background:#fffbebf8; padding:8px; border-radius:6px; border:1px solid #fde68a; line-height:1.3;">
+            <b>⚠️ AVISO LEGAL DE RESPONSABILIDAD:</b><br>
+            Este reporte de Coberturas y Uso es de carácter <b>exclusivamente referencial e informativo</b> y <b>NO ES VINCULANTE</b> para ningún trámite legal o de expedición de certificados. Debido a la desactualización histórica del Esquema de Ordenamiento Territorial (EOT) del Municipio de Argelia, la información puede presentar inconsistencias o imprecisiones cartográficas.
+          </div>
+          <button class="btn-pdf" id="btnReportePDF">📄 Descargar Reporte PDF</button>
         </div>`;
-
-      htmlPanel += `<button class="btn-pdf" onclick="exportarPDF('${idPredio}')">📄 Descargar Reporte PDF</button></div>`;
       aiContainer.innerHTML = htmlPanel;
+      document.getElementById('btnReportePDF').addEventListener('click', () => exportarPDF(idPredio));
 
       const popupContenido = `
-        <div style="font-size:12px; min-width:210px; font-family:'Segoe UI', Tahoma, sans-serif;">
-          <div style="background:#2563eb; color:white; padding:6px 8px; border-radius:4px 4px 0 0; font-weight:bold; margin:-13px -19px 8px -19px;">
-            📍 Predio Registrado
-          </div>
-          <b>Finca/Dir:</b> ${direccion}<br>
-          <b>NPN:</b> ${npn}<br>
+        <div class="popup-predio">
+          <div class="popup-titulo">📍 Predio Registrado</div>
+          <b>Finca/Dir:</b> ${esc(direccion)}<br>
+          <b>NPN:</b> ${esc(npn)}<br>
           <hr style="margin:6px 0; border:0; border-top:1px solid #cbd5e1;">
           <b style="color:#15803d;">Analista de Coberturas:</b><br>
           ${resumenHTML}
-        </div>
-      `;
+        </div>`;
 
-      layer.bindPopup(popupContenido).openPopup();
+      layer.bindPopup(popupContenido, { maxWidth: 300 });
+      // Se abre después del encuadre para que el popup quede visible
+      setTimeout(() => { if (consulta === consultaActual) layer.openPopup(); }, 450);
     }
 
-    async function descargarCapaGeoJSON(tableName) {
-      const status = document.getElementById("status");
-      status.textContent = `⏳ Preparando paquete de descarga GeoJSON para ${obtenerNombreAmigable(tableName)}...`;
-      
-      const { data, error } = await supabaseClient.rpc("get_geojson", { table_name: tableName });
-      if (error || !data) {
-        status.textContent = "❌ Error al descargar capa vectorial.";
-        return;
+    // =====================================================================
+    // DESCARGAS
+    // =====================================================================
+    async function descargarCapaGeoJSON(tableName, boton) {
+      const nombre = obtenerNombreAmigable(tableName);
+      setStatus(`⏳ Preparando descarga GeoJSON de ${nombre}...`);
+      if (boton) boton.disabled = true;
+      mostrarCarga(`Preparando descarga de ${nombre}...`);
+      try {
+        const data = await obtenerGeoJSON(tableName);
+        const blob = new Blob([JSON.stringify(data)], { type: "application/geo+json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${tableName}_EPSG4326.geojson`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        setStatus(`✅ Capa ${nombre} descargada (${data.features.length} elementos).`);
+      } catch (err) {
+        console.error('descarga', tableName, err);
+        setStatus('❌ Error al descargar la capa: ' + describirError(err), true);
+      } finally {
+        if (boton) boton.disabled = false;
+        ocultarCarga();
       }
-
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${tableName}_con_metadatos.geojson`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      status.textContent = `✅ Capa ${obtenerNombreAmigable(tableName)} descargada correctamente.`;
     }
 
     function exportarPDF(idPredio) {
-      const el = document.getElementById("reporteArea");
-      const opt = { 
-        margin: 0.5, 
-        filename: `Reporte_Territorial_Argelia_Predio_${idPredio}.pdf`, 
-        html2canvas: { scale: 2 }, 
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+      const original = document.getElementById("reporteArea");
+      if (!original || typeof html2pdf === 'undefined') {
+        setStatus('❌ El generador de PDF no está disponible. Recargue la página.', true);
+        return;
+      }
+      const el = original.cloneNode(true);
+      el.querySelectorAll('button').forEach(b => b.remove());
+      el.removeAttribute('id');
+      el.style.boxShadow = 'none';
+
+      const opt = {
+        margin: 0.5,
+        filename: `Reporte_Territorial_Argelia_Predio_${String(idPredio).replace(/[^\w-]/g, '_')}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
       html2pdf().set(opt).from(el).save();
     }
 
     function descargarDocumentoMetodologico() {
-      const el = document.getElementById("metodologiaPDF");
-      el.style.display = "block";
-      const opt = { 
-        margin: 0.6, 
-        filename: `Documento_Tecnico_Metodologico_Geoportal_Argelia.pdf`, 
-        html2canvas: { scale: 2 }, 
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+      if (typeof html2pdf === 'undefined') {
+        setStatus('❌ El generador de PDF no está disponible. Recargue la página.', true);
+        return;
+      }
+      const plantilla = document.getElementById("metodologiaPDF");
+      const el = plantilla.content.firstElementChild.cloneNode(true);
+      const opt = {
+        margin: 0.6,
+        filename: `Documento_Tecnico_Metodologico_Geoportal_Argelia.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css'] }
       };
-      html2pdf().set(opt).from(el).save().then(() => {
-        el.style.display = "none";
-      });
+      html2pdf().set(opt).from(el).save();
     }
 
+    // =====================================================================
+    // CONTROLES GENERALES
+    // =====================================================================
     function toggleGuiaUso() {
       const content = document.getElementById("guideContent");
       const icon = document.getElementById("guideToggleIcon");
@@ -747,16 +958,20 @@
       }
     }
 
-    function toggleTodas(activar) {
-      document.querySelectorAll('#layerList input[type="checkbox"]').forEach(cb => {
-        if (cb.checked !== activar) {
-          cb.checked = activar;
-          toggleCapa(cb.id.replace('layer-', ''), activar);
+    // Activa las capas una a una para no saturar el servidor
+    async function toggleTodas(activar) {
+      for (const t of capasOrden) {
+        const c = capas[t];
+        if (c.checkbox.checked !== activar) {
+          c.checkbox.checked = activar;
+          if (activar) await toggleCapa(t, true);
+          else toggleCapa(t, false);
         }
-      });
+      }
     }
 
     function resetearGeoportal() {
+      consultaActual++;
       document.getElementById('searchInput').value = '';
       document.getElementById('searchResults').innerHTML = '';
       toggleTodas(false);
@@ -765,19 +980,24 @@
       map.setView(CENTER_COORDS, CENTER_ZOOM);
       document.getElementById('aiAssistant').innerHTML = '';
 
-      for (let k in layerOpacities) {
-        layerOpacities[k] = 0.6;
-        const slider = document.getElementById(`opacity-${k}`);
-        if (slider) slider.value = 0.6;
-      }
+      capasOrden.forEach(t => {
+        const c = capas[t];
+        c.opacidad = OPACIDAD_INICIAL;
+        c.slider.value = OPACIDAD_INICIAL;
+        if (c.layer) c.layer.setStyle(getCorineStyle(t, OPACIDAD_INICIAL));
+      });
 
-      document.getElementById('status').textContent = '🧹 Geoportal limpiado. Listo para nueva consulta.';
+      setStatus('🧹 Geoportal limpiado. Listo para nueva consulta.');
     }
 
     window.addEventListener('resize', () => map.invalidateSize());
     window.addEventListener('orientationchange', () => setTimeout(() => map.invalidateSize(), 300));
 
-    window.onload = inicializar;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inicializar);
+    } else {
+      inicializar();
+    }
   </script>
 </body>
 </html>
