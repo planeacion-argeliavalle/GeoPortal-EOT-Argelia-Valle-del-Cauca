@@ -1,0 +1,29 @@
+# Evita que Supabase (plan gratuito) pause el proyecto por inactividad.
+# Supabase pausa tras 7 días sin uso; esta tarea consulta la base cada 3 días.
+# La llave usada es la "anon" pública, la misma que ya está en index.html.
+name: Mantener Supabase activo
+
+on:
+  schedule:
+    - cron: "17 13 */3 * *"   # cada 3 días, 8:17 a. m. hora Colombia
+  workflow_dispatch:           # permite ejecutarla a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://ddrhsncteyzcunmovxix.supabase.co
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkcmhzbmN0ZXl6Y3VubW92eGl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTYyMTgsImV4cCI6MjEwMDYzMjIxOH0.XXaMJw3gDX-EJT6cCDzosF3n4E4R0dGc_z5WJ45p5do
+    steps:
+      - name: Consultar la base de datos
+        run: |
+          codigo=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/list_tables" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "Respuesta de Supabase: $codigo"
+          if [ "$codigo" != "200" ]; then
+            echo "::error::Supabase no respondió correctamente (código $codigo). Revise si el proyecto está pausado en supabase.com"
+            exit 1
+          fi
