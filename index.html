@@ -242,10 +242,10 @@
     <div class="search-box">
       <span style="font-size:12px; font-weight:bold; color:#475569;">🔍 Buscador Catastral Multifiltro</span>
       <div class="search-input-group">
-        <input id="searchInput" type="search" autocomplete="off" placeholder="NPN o nombre de finca (Ej: La Esperanza)" onkeydown="if(event.key==='Enter') buscarPredios()" />
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Código predial (NPN). Ej: 76054010000..." onkeydown="if(event.key==='Enter') buscarPredios()" />
         <button id="btnBuscar" onclick="buscarPredios()">Buscar</button>
       </div>
-      <span class="search-hint">Mínimo 3 caracteres. El NPN puede escribirse con o sin guiones.</span>
+      <span class="search-hint">Escriba el código predial completo o una parte (mínimo 5 dígitos), con o sin guiones. También puede hacer clic en un predio del mapa.</span>
     </div>
     <ul id="searchResults"></ul>
 
@@ -281,7 +281,7 @@
       </div>
       <div class="user-guide-content" id="guideContent">
         <ul>
-          <li><b>Búsqueda:</b> Ingresa el <b>NPN (Cédula Catastral)</b> o <b>Nombre de Finca/Dirección</b> en el buscador.</li>
+          <li><b>Búsqueda:</b> Ingresa el <b>código predial (NPN)</b>, completo o una parte, en el buscador.</li>
           <li><b>Selección directa:</b> Activa la capa de Catastro y haz clic en cualquier predio del mapa.</li>
           <li><b>Diagnóstico:</b> Consulta automáticamente los % de cruce con zonas de Cultivos, Conservación y Protección.</li>
           <li><b>Descarga Catastral:</b> Exporta la capa de Catastro en formato GeoJSON.</li>
@@ -343,6 +343,9 @@
     const CAMPOS_ID = ['gid', 'id', 'objectid', 'fid', 'ogc_fid', 'id_predio'];
     const CAMPOS_NPN = ['npn', 'numero_predial', 'codigo_predial', 'cod_predial', 'numero_pre', 'codigo_pre', 'cod_catast', 'codigo_catastral', 'codigo', 'predial'];
     const CAMPOS_DIR = ['direccion', 'dir_predio', 'nombre_predio', 'nom_predio', 'nombre', 'predio', 'vereda'];
+    const CAMPOS_ZONA = ['urba_rural', 'zona', 'clase_suelo'];
+    const CAMPOS_MANZANA = ['codigo_man', 'manzana', 'cod_manzana'];
+    const SIN_DIRECCION = 'Sin nombre / dirección';
 
     // =====================================================================
     // UTILIDADES
@@ -367,6 +370,23 @@
         if (v !== null && v !== undefined && String(v).trim() !== '') return String(v).trim();
       }
       return null;
+    }
+
+    // Ficha del predio con los datos disponibles en la capa catastral
+    // (dirección solo si existe; zona urbana/rural y manzana cuando estén)
+    function detallePredioHTML(geojson, direccion, separador = '<br>') {
+      const props = (geojson && geojson.features && geojson.features[0] && geojson.features[0].properties) || {};
+      const lineas = [];
+      if (direccion && direccion !== SIN_DIRECCION) lineas.push(`<b>Finca / Dirección:</b> ${esc(direccion)}`);
+      const zona = campo(props, CAMPOS_ZONA);
+      if (zona) {
+        const z = zona.toUpperCase();
+        const texto = z.startsWith('U') ? 'Urbano' : z.startsWith('R') ? 'Rural' : zona;
+        lineas.push(`<b>Zona:</b> ${esc(texto)}`);
+      }
+      const manzana = campo(props, CAMPOS_MANZANA);
+      if (manzana) lineas.push(`<b>Código manzana:</b> ${esc(manzana)}`);
+      return lineas.join(separador);
     }
 
     function numero(valor) {
@@ -731,7 +751,7 @@
               <span style="color:var(--accent);">Ver en Mapa →</span>
             </div>
             <div><b>NPN:</b> ${esc(p.npn)}</div>
-            <div><b>Finca / Dir:</b> ${esc(p.direccion)}</div>`;
+            <div>${detallePredioHTML(aJSON(p.geojson), p.direccion, ' · ')}</div>`;
           resultsContainer.appendChild(li);
         });
 
@@ -816,7 +836,7 @@
           <h4>📊 Diagnóstico Territorial</h4>
           <b>Capa:</b> Catastro Argelia 2025<br>
           <b>NPN:</b> ${esc(npn)}<br>
-          <b>Finca / Dirección:</b> ${esc(direccion)}<br>
+          ${detallePredioHTML(geojson, direccion) ? detallePredioHTML(geojson, direccion) + '<br>' : ''}
           <b>Fecha de consulta:</b> ${esc(new Date().toLocaleString('es-CO'))}<br>
           <hr style="margin:8px 0; border:0; border-top:1px solid #bbf7d0;">
           <b>Desglose por Zonas de Cobertura y Uso:</b>`;
@@ -865,8 +885,8 @@
       const popupContenido = `
         <div class="popup-predio">
           <div class="popup-titulo">📍 Predio Registrado</div>
-          <b>Finca/Dir:</b> ${esc(direccion)}<br>
           <b>NPN:</b> ${esc(npn)}<br>
+          ${detallePredioHTML(geojson, direccion) ? detallePredioHTML(geojson, direccion) + '<br>' : ''}
           <hr style="margin:6px 0; border:0; border-top:1px solid #cbd5e1;">
           <b style="color:#15803d;">Analista de Coberturas:</b><br>
           ${resumenHTML}
