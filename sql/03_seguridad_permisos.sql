@@ -26,19 +26,22 @@
 --
 -- REVERSIÓN (solo si otra aplicación necesitaba leer tablas):
 --   grant select on all tables in schema public to anon, authenticated;
+--   (y si se necesitaba el permiso general: ... to public;)
 -- =====================================================================
 
--- 1. Retira el acceso directo a tablas, vistas y secuencias existentes
-revoke all on all tables in schema public from anon, authenticated;
-revoke all on all sequences in schema public from anon, authenticated;
+-- 1. Retira el acceso directo a tablas, vistas y secuencias existentes.
+--    Incluye PUBLIC ("todo el mundo"): algunas herramientas de carga de
+--    capas (p. ej. QGIS) otorgan lectura a PUBLIC, que anon hereda.
+revoke all on all tables in schema public from anon, authenticated, public;
+revoke all on all sequences in schema public from anon, authenticated, public;
 
 -- 2. Mismo comportamiento para objetos que se creen en el futuro
 --    (aplica a los creados por el usuario postgres: panel, SQL Editor,
 --    QGIS u ogr2ogr con la conexión principal)
 alter default privileges for role postgres in schema public
-  revoke all on tables from anon, authenticated;
+  revoke all on tables from anon, authenticated, public;
 alter default privileges for role postgres in schema public
-  revoke all on sequences from anon, authenticated;
+  revoke all on sequences from anon, authenticated, public;
 
 -- 3. Las funciones del visor siguen disponibles para el público
 grant usage on schema public to anon, authenticated;
